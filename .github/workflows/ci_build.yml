@@ -12,7 +12,6 @@ on:
       - "app/src/main/assets/**"
       - "crowdin.yml"
   push:
-    branches: [main]
     paths-ignore:
       - ".github/ISSUE_TEMPLATE/**"
       - ".idea/**"
