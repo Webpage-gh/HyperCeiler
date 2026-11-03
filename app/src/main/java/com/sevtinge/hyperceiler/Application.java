@@ -33,5 +33,8 @@ public class Application extends android.app.Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        // 老 XSharedPreferences 方案（min 82，无 xposedsharedprefs）下，
+        // hook 进程以普通文件读取本项目 prefs，必须由模块自身放开权限。
+        PrefsUtils.makePrefsReadable();
     }
 }

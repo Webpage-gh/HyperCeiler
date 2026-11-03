@@ -18,6 +18,7 @@
  */
 package com.sevtinge.hyperceiler.utils.prefs;
 
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -60,34 +61,60 @@ public class PrefsUtils {
     public static SharedPreferences getSharedPrefs(Context context) {
         return getSharedPrefs(context, false);
     }
+
+    /**
+     * 老 XSharedPreferences 方案（xposedminversion &lt;= 92 且未声明 xposedsharedprefs）下，
+     * hook 进程通过 DirectAccessService 即普通 FileInputStream 读取本模块的 prefs 文件，
+     * 因此必须由模块自身把目录与文件改成其它 uid 可读。
+     * <p>
+     * 由模块进程调用；在 hook 进程里调用对其它应用的文件无效。
+     */
+    @SuppressLint({"SetWorldReadable", "SetWorldWritable"})
+    public static void makePrefsReadable() {
+        try {
+            File prefsDir = new File(getSharedPrefsPath());
+            if (prefsDir.exists()) {
+                prefsDir.setExecutable(true, false);
+                prefsDir.setReadable(true, false);
+                prefsDir.setWritable(true, false);
+            }
+            File prefsFile = new File(getSharedPrefsFile());
+            if (prefsFile.exists()) {
+                prefsFile.setReadable(true, false);
+                prefsFile.setExecutable(true, false);
+                prefsFile.setWritable(true, false);
+            }
+        } catch (Throwable t) {
+            Log.e("prefs", "makePrefsReadable failed", t);
+        }
+    }
     
     public static String getSharedPrefsPath() {
+        // hook 进程不做 Application 初始化，mSharedPreferences 为 null，
+        // 直接返回静态路径（/data/user_de/0/<pkg>/shared_prefs）。
+        if (mSharedPreferences == null) return mPrefsPath;
         if (mPrefsPathCurrent == null) try {
             Field mFile = mSharedPreferences.getClass().getDeclaredField("mFile");
             mFile.setAccessible(true);
             mPrefsPathCurrent = ((File) mFile.get(mSharedPreferences)).getParentFile().getAbsolutePath();
             return mPrefsPathCurrent;
         } catch (Throwable t) {
-            System.out.print("Test" + t);
             return mPrefsPath;
         }
         else return mPrefsPathCurrent;
     }
 
     public static String getSharedPrefsFile() {
+        if (mSharedPreferences == null) return mPrefsFile;
         if (mPrefsFileCurrent == null) try {
             Field fFile = mSharedPreferences.getClass().getDeclaredField("mFile");
             fFile.setAccessible(true);
             mPrefsFileCurrent = ((File) fFile.get(mSharedPreferences)).getAbsolutePath();
-            System.out.println("Test: mPrefsFileCurrent");
             return mPrefsFileCurrent;
         } catch (Throwable t) {
-            System.out.println("Test: mPrefsFile" + t);
             return mPrefsFile;
         }
-        else
-            System.out.println("Test: mPrefsFileCurrent2");
-        return mPrefsFileCurrent;
+        else return mPrefsFileCurrent;
     }
 
 
