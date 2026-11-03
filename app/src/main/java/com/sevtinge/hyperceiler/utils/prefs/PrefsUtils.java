@@ -75,8 +75,7 @@ public class PrefsUtils {
     }
 
     public static String getSharedPrefsFile() {
-        if (mPrefsFileCurrent == null) try {
-            Field fFile = mSharedPreferences.getClass().getDeclaredField("mFile");
+        if (mPrefsFileCurrent == null) try {            Field fFile = mSharedPreferences.getClass().getDeclaredField("mFile");
             fFile.setAccessible(true);
             mPrefsFileCurrent = ((File) fFile.get(mSharedPreferences)).getAbsolutePath();
             System.out.println("Test: mPrefsFileCurrent");
@@ -93,6 +92,15 @@ public class PrefsUtils {
 
     public static boolean contains(String key) {
         return mSharedPreferences.contains(key);
+    }
+
+    /**
+     * 用完整 key（已带 prefs_key_ 前缀）从快照里读布尔值。
+     * CorePatch 等直接使用 XML 原始 key 的代码走这里，避免 PrefsMap 的自动前缀。
+     */
+    public static boolean getBooleanRaw(String key, boolean defValue) {
+        Object value = mPrefsMap.get(key);
+        return value instanceof Boolean ? (Boolean) value : defValue;
     }
 
     public static SharedPreferences.Editor editor() {

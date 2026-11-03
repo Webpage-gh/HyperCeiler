@@ -53,6 +53,7 @@ import com.sevtinge.hyperceiler.module.skip.SystemFrameworkForCorePatch;
 import com.sevtinge.hyperceiler.safe.CrashHook;
 import com.sevtinge.hyperceiler.utils.api.ProjectApi;
 import com.sevtinge.hyperceiler.utils.log.LogManager;
+import com.sevtinge.hyperceiler.utils.prefs.PrefsProviderClient;
 import com.sevtinge.hyperceiler.utils.prefs.PrefsUtils;
 
 import java.io.File;
@@ -64,7 +65,6 @@ import java.util.function.BiConsumer;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
-import de.robv.android.xposed.XSharedPreferences;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
@@ -97,8 +97,8 @@ public class XposedInit implements IXposedHookZygoteInit, IXposedHookLoadPackage
         );
         HCInit.initStartupParam(startupParam);
 
-        // load New XSPrefs
-        setXSharedPrefs();
+        // load prefs from provider
+        setPrefsFromProvider();
         // load CorePatch
         new SystemFrameworkForCorePatch().initZygote(startupParam);
         // load ZygoteHook
@@ -113,6 +113,9 @@ public class XposedInit implements IXposedHookZygoteInit, IXposedHookLoadPackage
         EzXHelper.initHandleLoadPackage(lpparam);
         EzXHelper.setLogTag(TAG);
         EzXHelper.setToastTag(TAG);
+
+        // zygote 阶段未能通过 Provider 取到配置时，在进程内再补一次（幂等）。
+        setPrefsFromProvider();
 
         // load CorePatch
         new SystemFrameworkForCorePatch().handleLoadPackage(lpparam);
@@ -141,30 +144,17 @@ public class XposedInit implements IXposedHookZygoteInit, IXposedHookLoadPackage
         }
     }
 
-    private void setXSharedPrefs() {
-        if (mPrefsMap.isEmpty()) {
-            XSharedPreferences mXSharedPreferences;
-            try {
-                mXSharedPreferences = new XSharedPreferences(ProjectApi.mAppModulePkg, PrefsUtils.mPrefsName);
-                mXSharedPreferences.makeWorldReadable();
-                Map<String, ?> allPrefs = mXSharedPreferences.getAll();
-
-                if (allPrefs != null && !allPrefs.isEmpty()) {
-                    mPrefsMap.putAll(allPrefs);
-                } else {
-                    mXSharedPreferences = new XSharedPreferences(new File(PrefsUtils.mPrefsFile));
-                    mXSharedPreferences.makeWorldReadable();
-                    allPrefs = mXSharedPreferences.getAll();
-
-                    if (allPrefs != null && !allPrefs.isEmpty()) {
-                        mPrefsMap.putAll(allPrefs);
-                    } else {
-                        logE("[UID" + Process.myUid() + "]", "Cannot read SharedPreferences, some mods might not work!");
-                    }
-                }
-            } catch (Throwable t) {
-                logE("setXSharedPrefs", t);
+    private void setPrefsFromProvider() {
+        if (!mPrefsMap.isEmpty()) return;
+        try {
+            Map<String, Object> allPrefs = PrefsProviderClient.loadAll();
+            if (allPrefs == null || allPrefs.isEmpty()) {
+                logE("[UID" + Process.myUid() + "]", "Cannot load preferences from provider, some mods might not work!");
+                return;
             }
+            mPrefsMap.putAll(allPrefs);
+        } catch (Throwable t) {
+            logE("setPrefsFromProvider", t);
         }
     }
 

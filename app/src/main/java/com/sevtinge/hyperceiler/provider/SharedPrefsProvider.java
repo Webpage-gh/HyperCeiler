@@ -27,6 +27,7 @@ import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
@@ -37,8 +38,10 @@ import com.sevtinge.hyperceiler.utils.prefs.PrefsUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class SharedPrefsProvider extends ContentProvider {
@@ -133,6 +136,47 @@ public class SharedPrefsProvider extends ContentProvider {
     @Override
     public String getType(@NonNull Uri uri) {
         return null;
+    }
+
+    /**
+     * 批量读取入口：hook 进程用它一次性拿到全部配置，
+     * 避免 3000+ 个开关读取点变成 IPC。
+     * <p>
+     * 键值以类型前缀编码，保证 Bundle 能承载四种 prefs 类型：
+     * b:/i:/s:/ss: 分别对应 boolean/int/String/Set&lt;String&gt;。
+     */
+    @Override
+    public Bundle call(@NonNull String method, String arg, Bundle extras) {
+        if (!"getAll".equals(method)) return super.call(method, arg, extras);
+
+        SharedPreferences sp = prefs != null ? prefs : PrefsUtils.mSharedPreferences;
+        if (sp == null) {
+            Log.e("prefs", "call(getAll): prefs is null");
+            return null;
+        }
+
+        Bundle out = new Bundle();
+        try {
+            for (Map.Entry<String, ?> entry : sp.getAll().entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+                if (value instanceof Boolean b) {
+                    out.putBoolean("b:" + key, b);
+                } else if (value instanceof Integer i) {
+                    out.putInt("i:" + key, i);
+                } else if (value instanceof String s) {
+                    out.putString("s:" + key, s);
+                } else if (value instanceof Set<?> set) {
+                    ArrayList<String> list = new ArrayList<>(set.size());
+                    for (Object item : set) if (item instanceof String str) list.add(str);
+                    out.putStringArrayList("ss:" + key, list);
+                }
+            }
+        } catch (Throwable t) {
+            Log.e("prefs", "call(getAll) failed", t);
+            return null;
+        }
+        return out;
     }
 
     @Override

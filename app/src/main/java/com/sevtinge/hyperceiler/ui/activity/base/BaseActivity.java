@@ -28,7 +28,6 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import com.sevtinge.hyperceiler.module.base.tool.AppsTool;
 import com.sevtinge.hyperceiler.utils.prefs.PrefsUtils;
 
 import fan.appcompat.app.AppCompatActivity;
@@ -53,8 +52,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private void registerObserver() {
+        // 配置改由 SharedPrefsProvider 跨进程下发，不再需要 chmod 配置文件
         PrefsUtils.registerOnSharedPreferenceChangeListener(getApplicationContext());
-        AppsTool.fixPermissionsAsync(getApplicationContext());
-        AppsTool.registerFileObserver(getApplicationContext());
     }
 }
