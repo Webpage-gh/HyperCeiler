@@ -255,7 +255,7 @@ dependencies {
     implementation(libs.ezxhelper)
     implementation(libs.hiddenapibypass)
     implementation(libs.gson)
-    implementation(libs.hooktool)
+    implementation(files("libs/HookTool-v.1.1.6.2.aar"))
     implementation(libs.lyric.getter.api)
     implementation(libs.lunarcalendar)
 

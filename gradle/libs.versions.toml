@@ -20,7 +20,6 @@ gson = "2.11.0"
 dexkit = "2.0.3"
 ezxhelper = "2.2.0"
 hiddenapibypass = "4.3"
-hooktool = "v.1.1.6.2"
 lyricGetterApi = "6.0.0"
 mmkv = "2.0.2"
 
@@ -29,7 +28,6 @@ annotation = { module = "androidx.annotation:annotation", version.ref = "annotat
 core = { group = "androidx.core", name = "core", version.ref = "core" }
 collection = { group = "androidx.collection", name = "collection", version.ref = "collection" }
 fragment = { group = "androidx.fragment", name = "fragment", version.ref = "fragment" }
-hooktool = { module = "com.github.HChenX:HookTool", version.ref = "hooktool" }
 lunarcalendar = { module = "com.xhinliang:LunarCalendar", version.ref = "lunarcalendar" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 lifecycle-common = { group = "androidx.lifecycle", name = "lifecycle-common", version.ref = "lifecycle-common" }
