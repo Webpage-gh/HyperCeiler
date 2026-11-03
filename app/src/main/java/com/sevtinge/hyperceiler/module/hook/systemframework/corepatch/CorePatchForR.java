@@ -80,9 +80,7 @@ public class CorePatchForR extends XposedHelper implements IXposedHookLoadPackag
         }
     }
 
-    // prefs 位于 device-protected 存储（/data/user_de/0/<pkg>/shared_prefs），
-    // 必须显式传 File；两参构造器会指向 /data/data/<pkg>（=/data/user/0/<pkg>），读不到。
-    final XSharedPreferences prefs = new XSharedPreferences(new java.io.File(PrefsUtils.getSharedPrefsFile()));
+    final XSharedPreferences prefs = new XSharedPreferences(ProjectApi.mAppModulePkg, PrefsUtils.mPrefsName);
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws IllegalAccessException, InvocationTargetException, InstantiationException {

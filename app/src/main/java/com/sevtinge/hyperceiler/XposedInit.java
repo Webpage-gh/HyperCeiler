@@ -143,22 +143,24 @@ public class XposedInit implements IXposedHookZygoteInit, IXposedHookLoadPackage
 
     private void setXSharedPrefs() {
         if (mPrefsMap.isEmpty()) {
+            XSharedPreferences mXSharedPreferences;
             try {
-                // 老方案（xposedminversion <= 92 且无 xposedsharedprefs）下，
-                // XSharedPreferences 走 DirectAccessService，即普通 FileInputStream，
-                // 读的是模块自己的 prefs 文件。本模块的 prefs 位于 device-protected 存储，
-                // 与 XSharedPreferences 两参构造器默认的 /data/data/<pkg> 不是同一份文件，
-                // 因此必须显式传入路径。
-                File prefsFile = new File(PrefsUtils.getSharedPrefsFile());
-                XSharedPreferences mXSharedPreferences = new XSharedPreferences(prefsFile);
+                mXSharedPreferences = new XSharedPreferences(ProjectApi.mAppModulePkg, PrefsUtils.mPrefsName);
+                mXSharedPreferences.makeWorldReadable();
                 Map<String, ?> allPrefs = mXSharedPreferences.getAll();
 
                 if (allPrefs != null && !allPrefs.isEmpty()) {
                     mPrefsMap.putAll(allPrefs);
                 } else {
-                    logE("[UID" + Process.myUid() + "]", "Cannot read SharedPreferences (" + prefsFile
-                        + ", exists=" + prefsFile.exists() + ", readable=" + prefsFile.canRead()
-                        + "), some mods might not work!");
+                    mXSharedPreferences = new XSharedPreferences(new File(PrefsUtils.mPrefsFile));
+                    mXSharedPreferences.makeWorldReadable();
+                    allPrefs = mXSharedPreferences.getAll();
+
+                    if (allPrefs != null && !allPrefs.isEmpty()) {
+                        mPrefsMap.putAll(allPrefs);
+                    } else {
+                        logE("[UID" + Process.myUid() + "]", "Cannot read SharedPreferences, some mods might not work!");
+                    }
                 }
             } catch (Throwable t) {
                 logE("setXSharedPrefs", t);

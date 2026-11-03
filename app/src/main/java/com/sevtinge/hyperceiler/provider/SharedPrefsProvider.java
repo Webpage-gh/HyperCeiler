@@ -62,9 +62,6 @@ public class SharedPrefsProvider extends ContentProvider {
     public boolean onCreate() {
         try {
             prefs = PrefsUtils.getSharedPrefs(getContext(), true);
-            // 本 Provider 是 directBootAware，解锁前就可能被拉起，
-            // 是修正 prefs 文件权限最早的时机（老 XSharedPreferences 方案依赖它）。
-            PrefsUtils.makePrefsReadable();
             return true;
         } catch (Throwable throwable) {
             return false;
