@@ -24,6 +24,8 @@ import android.os.Build;
 
 import java.lang.reflect.InvocationTargetException;
 
+import com.sevtinge.hyperceiler.utils.prefs.PrefsUtils;
+
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
