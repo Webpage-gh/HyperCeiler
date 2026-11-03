@@ -45,18 +45,27 @@ jobs:
         with:
           cache-overwrite-existing: true
 
-      # 禁用来自secrets的签名
-      - name: Create Sign File
-        if: false && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      # AGP 8.8 在 signingConfig 缺 storeFile 时直接打包失败，
+      # 因此每次运行生成一个一次性 keystore，仅用于产出可安装的测试包。
+      - name: Create throwaway signing config
         run: |
-          touch signing.properties
-          echo storePassword=${{ secrets.KEY_STORE_PASSWORD }} >> signing.properties
-          echo keyAlias=${{ secrets.ALIAS }} >> signing.properties
-          echo keyPassword='${{ secrets.KEY_STORE_PASSWORD }}' >> signing.properties
-          echo storeFile=../key.jks >> signing.properties
-          echo ${{ secrets.SIGNING_KEY }} | base64 --decode > key.jks
-          echo "GIT_ACTOR=${{ secrets.GIT_ACTOR }}" >> $GITHUB_ENV
-          echo "GIT_TOKEN=${{ secrets.GIT_TOKEN }}" >> $GITHUB_ENV
+          keytool -genkeypair -v \
+            -keystore "$GITHUB_WORKSPACE/ci-test.jks" \
+            -storetype PKCS12 \
+            -storepass citestpass \
+            -keypass citestpass \
+            -alias citestkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 365 \
+            -dname "CN=HyperCeiler CI Test, OU=CI, O=HyperCeiler, L=NA, ST=NA, C=NA"
+          cat > signing.properties <<'EOF'
+          storeFile=../ci-test.jks
+          storePassword=citestpass
+          keyAlias=citestkey
+          keyPassword=citestpass
+          EOF
+          cat signing.properties
 
       - name: Build with Gradle (Canary)
         if: github.event_name != 'pull_request'
